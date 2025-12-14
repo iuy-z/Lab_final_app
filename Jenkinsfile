@@ -13,7 +13,6 @@ pipeline {
         =============================== */
         stage('Code Fetch') {
             steps {
-                echo "Fetching source code from GitHub..."
                 git branch: 'main',
                     credentialsId: 'github-credentials',
                     url: 'https://github.com/yourusername/myapp.git'
@@ -23,24 +22,14 @@ pipeline {
         /* ===============================
            DOCKER IMAGE CREATION STAGE
         =============================== */
-        stage('Docker Build & Push') {
+        stage('Docker Build') {
             steps {
-                script {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'dockerhub-credentials',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )]) {
-
-                        sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker build -t $DOCKER_USER/${IMAGE_NAME}:${IMAGE_TAG} .
-                        docker tag $DOCKER_USER/${IMAGE_NAME}:${IMAGE_TAG} $DOCKER_USER/${IMAGE_NAME}:latest
-                        docker push $DOCKER_USER/${IMAGE_NAME}:${IMAGE_TAG}
-                        docker push $DOCKER_USER/${IMAGE_NAME}:latest
-                        '''
-                    }
-                }
+                echo "Building Docker image for Minikube..."
+                sh '''
+                eval $(minikube docker-env)
+                docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+                '''
             }
         }
 
@@ -49,7 +38,7 @@ pipeline {
         =============================== */
         stage('Kubernetes Deployment') {
             steps {
-                echo "Deploying application to Kubernetes..."
+                echo "Deploying to Minikube..."
                 sh '''
                 kubectl apply -f k8s/deployment.yaml
                 kubectl apply -f k8s/service.yaml
@@ -62,7 +51,7 @@ pipeline {
         =============================== */
         stage('Monitoring (Prometheus & Grafana)') {
             steps {
-                echo "Deploying Prometheus and Grafana..."
+                echo "Deploying Prometheus & Grafana on Minikube..."
                 sh '''
                 kubectl apply -f monitoring/prometheus.yaml
                 kubectl apply -f monitoring/grafana.yaml
@@ -73,10 +62,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ CI/CD Pipeline executed successfully!"
+            echo "✅ Minikube CI/CD pipeline completed successfully!"
         }
         failure {
-            echo "❌ Pipeline failed. Check Jenkins logs."
+            echo "❌ Pipeline failed – check logs"
         }
     }
 }
