@@ -15,7 +15,7 @@ pipeline {
             steps {
                 git branch: 'main',
                     credentialsId: 'github-credentials',
-                    url: 'https://github.com/yourusername/myapp.git'
+                    url: 'https://github.com/iuy-z/Lab_final_app.git'
             }
         }
 
