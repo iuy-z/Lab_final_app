@@ -28,7 +28,7 @@ pipeline {
                 echo "Building Docker image inside Minikube Docker environment..."
                 sh '''
                 # Start Minikube if not running
-                minikube start || true
+                
                 
                 # Load Minikube Docker environment
                 eval $(minikube docker-env)
