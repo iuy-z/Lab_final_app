@@ -4,10 +4,6 @@ pipeline {
     environment {
         IMAGE_NAME = "flask-user-app"
         IMAGE_TAG  = "${BUILD_NUMBER}"
-        DOCKER_TLS_VERIFY = "1"
-        DOCKER_HOST = "tcp://192.168.49.2:2376"
-        DOCKER_CERT_PATH = "/home/ubuntu/.minikube/certs"
-        MINIKUBE_ACTIVE_DOCKERD = "minikube"
     }
 
     stages {
@@ -19,7 +15,7 @@ pipeline {
             steps {
                 echo "Fetching source code from GitHub..."
                 git branch: 'main',
-                    credentialsId: 'github-credentials',  // optional if private repo
+                    credentialsId: 'github-credentials',  // only if repo is private
                     url: 'https://github.com/iuy-z/Lab_final_app.git'
             }
         }
@@ -29,9 +25,12 @@ pipeline {
         =============================== */
         stage('Docker Build for Minikube') {
             steps {
-                echo "Building Docker image for Minikube..."
+                echo "Building Docker image inside Minikube Docker environment..."
                 sh '''
-                # Docker build using Minikube's Docker daemon
+                # Load Minikube Docker environment
+                eval $(minikube docker-env)
+
+                # Build and tag the Docker image
                 docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
                 docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
                 '''
