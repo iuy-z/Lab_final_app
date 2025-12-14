@@ -4,10 +4,10 @@ pipeline {
     environment {
         IMAGE_NAME = "flask-user-app"
         IMAGE_TAG  = "${BUILD_NUMBER}"
-        DOCKER_TLS_VERIFY="1"
-        DOCKER_HOST="tcp://192.168.49.2:2376"
-        DOCKER_CERT_PATH="/home/ubuntu/.minikube/certs"
-        MINIKUBE_ACTIVE_DOCKERD="minikube"
+        DOCKER_TLS_VERIFY = "1"
+        DOCKER_HOST = "tcp://192.168.49.2:2376"
+        DOCKER_CERT_PATH = "/home/ubuntu/.minikube/certs"
+        MINIKUBE_ACTIVE_DOCKERD = "minikube"
     }
 
     stages {
@@ -15,27 +15,23 @@ pipeline {
         /* ===============================
            CODE FETCH STAGE
         =============================== */
-       stage('Docker Build') {
-        steps {
-            echo "Building Docker image for Minikube..."
-            sh '''
-            # Jenkins cannot run eval in non-interactive shell
-            # Assuming env variables already set
-            docker build -t flask-user-app:${BUILD_NUMBER} .
-            docker tag flask-user-app:${BUILD_NUMBER} flask-user-app:latest
-            '''
+        stage('Code Fetch') {
+            steps {
+                echo "Fetching source code from GitHub..."
+                git branch: 'main',
+                    credentialsId: 'github-credentials',  // optional if private repo
+                    url: 'https://github.com/iuy-z/Lab_final_app.git'
+            }
         }
-    }
-
 
         /* ===============================
            DOCKER IMAGE CREATION STAGE
         =============================== */
-        stage('Docker Build') {
+        stage('Docker Build for Minikube') {
             steps {
                 echo "Building Docker image for Minikube..."
                 sh '''
-                eval $(minikube docker-env)
+                # Docker build using Minikube's Docker daemon
                 docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
                 docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
                 '''
@@ -47,7 +43,7 @@ pipeline {
         =============================== */
         stage('Kubernetes Deployment') {
             steps {
-                echo "Deploying to Minikube..."
+                echo "Deploying application to Minikube..."
                 sh '''
                 kubectl apply -f k8s/deployment.yaml
                 kubectl apply -f k8s/service.yaml
