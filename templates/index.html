@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Sample Web App</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Welcome to My Sample Web App!</h1>
+    <a href="/users">View Users</a>
+    <h2>Add New User</h2>
+    <form action="/add_user" method="POST">
+        <label>Name:</label>
+        <input type="text" name="name" required><br>
+        <label>Email:</label>
+        <input type="email" name="email" required><br>
+        <input type="submit" value="Add User">
+    </form>
+</body>
+</html>
