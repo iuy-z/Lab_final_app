@@ -2,50 +2,36 @@ pipeline {
     agent any
 
     environment {
+        DOCKERHUB_USER = "your_dockerhub_username"
         IMAGE_NAME = "flask-user-app"
         IMAGE_TAG  = "${BUILD_NUMBER}"
     }
 
     stages {
 
-        /* ===============================
-           CODE FETCH STAGE
-        =============================== */
         stage('Code Fetch') {
             steps {
-                echo "Fetching source code from GitHub..."
                 git branch: 'main',
-                    credentialsId: 'github-credentials',  // only if repo is private
+                    credentialsId: 'github-credentials',
                     url: 'https://github.com/iuy-z/Lab_final_app.git'
             }
         }
 
-        /* ===============================
-           DOCKER IMAGE CREATION STAGE
-        =============================== */
-        stage('Docker Build for Minikube') {
+        stage('Docker Build & Push') {
             steps {
-                echo "Building Docker image inside Minikube Docker environment..."
-                sh '''
-                # Start Minikube if not running
-                
-                
-                # Load Minikube Docker environment
-                eval $(minikube docker-env)
-
-                # Build and tag the Docker image
-                docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
-                '''
+                script {
+                    echo "Building Docker Image..."
+                    sh "docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} ."
+                    sh "docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
+                    sh "docker tag ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} ${DOCKERHUB_USER}/${IMAGE_NAME}:latest"
+                    sh "docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:latest"
+                }
             }
         }
 
-        /* ===============================
-           KUBERNETES DEPLOYMENT STAGE
-        =============================== */
         stage('Kubernetes Deployment') {
             steps {
-                echo "Deploying application to Minikube..."
+                echo "Deploying application using kubectl..."
                 sh '''
                 kubectl apply -f k8s/deployment.yaml
                 kubectl apply -f k8s/service.yaml
@@ -53,15 +39,14 @@ pipeline {
             }
         }
 
-        /* ===============================
-           PROMETHEUS / GRAFANA STAGE
-        =============================== */
         stage('Monitoring (Prometheus & Grafana)') {
             steps {
-                echo "Deploying Prometheus & Grafana on Minikube..."
+                echo "Deploying monitoring stack..."
                 sh '''
-                kubectl apply -f monitoring/prometheus.yaml
-                kubectl apply -f monitoring/grafana.yaml
+                kubectl create namespace monitoring || true
+                helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+                helm repo update
+                helm install prometheus kube-prometheus-stack --namespace monitoring --create-namespace || true
                 '''
             }
         }
@@ -69,10 +54,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Minikube CI/CD pipeline completed successfully!"
+            echo "CI/CD pipeline executed successfully!"
         }
         failure {
-            echo "❌ Pipeline failed – check logs"
+            echo "Pipeline failed. Check logs!"
         }
     }
 }
