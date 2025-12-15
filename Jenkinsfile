@@ -43,22 +43,28 @@ pipeline {
                 '''
             }
         }
+
         stage('Monitoring (Prometheus & Grafana)') {
             steps {
                 echo "Deploying Prometheus and Grafana..."
                 sh """
-                    # Set KUBECONFIG for Jenkins
                     export KUBECONFIG=${KUBECONFIG}
-            
-                    # Apply Prometheus YAML
-                    kubectl apply -f monitoring/prometheus.yaml --validate=false
-            
-                    # Apply Grafana YAML
-                    kubectl apply -f monitoring/grafana.yaml --validate=false
-            
-                    # Optional: check pods
-                    kubectl get pods -n default
-                    """
+
+                    # Create monitoring namespace if not exists
+                    kubectl get ns monitoring || kubectl create ns monitoring
+
+                    # Apply Prometheus pod + service
+                    kubectl apply -f monitoring/prometheus.yaml -n monitoring --validate=false
+                    kubectl apply -f monitoring/prometheus-svc.yaml -n monitoring --validate=false
+
+                    # Apply Grafana pod + service
+                    kubectl apply -f monitoring/grafana.yaml -n monitoring --validate=false
+                    kubectl apply -f monitoring/grafana-svc.yaml -n monitoring --validate=false
+
+                    # Optional: check pods and services in monitoring namespace
+                    kubectl get pods -n monitoring
+                    kubectl get svc -n monitoring
+                """
             }
         }
 
