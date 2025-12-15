@@ -14,10 +14,18 @@ data:
   prometheus.yml: |
     global:
       scrape_interval: 15s
+
     scrape_configs:
-      - job_name: 'kubernetes'
+      # Prometheus self metrics
+      - job_name: 'prometheus'
         static_configs:
           - targets: ['localhost:9090']
+
+      # Example Flask app metrics (if you use prometheus_client)
+      - job_name: 'flask-app'
+        static_configs:
+          - targets: ['flask-service.default.svc.cluster.local:5000']
+
 ---
 # ---- Prometheus Deployment ----
 apiVersion: apps/v1
