@@ -19,12 +19,25 @@ pipeline {
 
         stage('Docker Build & Push') {
             steps {
-                script {
-                    echo "Building Docker Image..."
-                    sh "docker build -t ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} ."
-                    sh "docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
-                    sh "docker tag ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} ${DOCKERHUB_USER}/${IMAGE_NAME}:latest"
-                    sh "docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:latest"
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                    echo "Logging into DockerHub..."
+                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+
+                    echo "Building Docker image..."
+                    docker build -t $DOCKER_USER/flask-user-app:$BUILD_NUMBER .
+
+                    echo "Pushing Docker image..."
+                    docker push $DOCKER_USER/flask-user-app:$BUILD_NUMBER
+
+                    echo "Tagging latest..."
+                    docker tag $DOCKER_USER/flask-user-app:$BUILD_NUMBER $DOCKER_USER/flask-user-app:latest
+                    docker push $DOCKER_USER/flask-user-app:latest
+                    '''
                 }
             }
         }
@@ -46,7 +59,9 @@ pipeline {
                 kubectl create namespace monitoring || true
                 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
                 helm repo update
-                helm install prometheus kube-prometheus-stack --namespace monitoring --create-namespace || true
+                helm install prometheus kube-prometheus-stack \
+                    --namespace monitoring \
+                    --create-namespace || true
                 '''
             }
         }
