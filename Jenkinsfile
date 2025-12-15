@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKERHUB_USER = "irum90"
-        DOCKERHUB_PASS = credentials('dockerhub-password') // Jenkins secret
+        DOCKERHUB_PASS = credentials('dockerhub-credentials') // Jenkins secret
         IMAGE_NAME    = "flask-user-app"
         IMAGE_TAG     = "${BUILD_NUMBER}"
         KUBECONFIG    = "/var/lib/jenkins/.kube/config" // path for Jenkins user
