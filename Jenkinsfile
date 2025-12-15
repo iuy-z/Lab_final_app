@@ -46,25 +46,13 @@ pipeline {
 
         stage('Monitoring (Prometheus & Grafana)') {
             steps {
-                echo "Deploying Prometheus and Grafana..."
-                sh """
-                    export KUBECONFIG=${KUBECONFIG}
-
-                    # Create monitoring namespace if not exists
-                    kubectl get ns monitoring || kubectl create ns monitoring
-
-                    # Apply Prometheus pod + service
-                    kubectl apply -f monitoring/prometheus.yaml -n monitoring --validate=false
-                    kubectl apply -f monitoring/prometheus-svc.yaml -n monitoring --validate=false
-
-                    # Apply Grafana pod + service
-                    kubectl apply -f monitoring/grafana.yaml -n monitoring --validate=false
-                    kubectl apply -f monitoring/grafana-svc.yaml -n monitoring --validate=false
-
-                    # Optional: check pods and services in monitoring namespace
-                    kubectl get pods -n monitoring
-                    kubectl get svc -n monitoring
-                """
+               
+                echo "Applying Prometheus + Grafana YAML"
+                sh 'kubectl apply -f monitoring/monitoring-all.yaml'
+                echo "Checking Pods"
+                sh 'kubectl get pods -n monitoring'
+                echo "Checking Services"
+                sh 'kubectl get svc -n monitoring'
             }
         }
 
