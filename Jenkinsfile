@@ -46,10 +46,14 @@ pipeline {
             steps {
                 echo "Deploying application using kubectl..."
                 sh '''
-                kubectl apply -f k8s/deployment.yaml --validate=false
-                kubectl apply -f k8s/service.yaml --validate=false
-
-                '''
+                kubectl apply -f k8s/deployment.yaml \
+                  --insecure-skip-tls-verify=true \
+                  --validate=false
+        
+                kubectl apply -f k8s/service.yaml \
+                  --insecure-skip-tls-verify=true \
+                  --validate=false
+                        '''
             }
         }
 
